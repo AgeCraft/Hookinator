@@ -54,6 +54,12 @@ public class HookLoader {
 			loader.load();
 		}
 	}
+	
+	public static ObfMapping registerHook(String className, String name, String desc) {
+		ObfMapping hook = new ObfMapping(className, name, desc);
+		registerHook(hook);
+		return hook;
+	}
 
 	public static void registerHook(ObfMapping hook) {
 		if(!hook.isMethod()) {
