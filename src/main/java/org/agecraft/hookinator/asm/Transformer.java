@@ -1,6 +1,7 @@
 package org.agecraft.hookinator.asm;
 
 import java.io.File;
+import java.util.ListIterator;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
@@ -8,9 +9,11 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import codechicken.lib.asm.ASMHelper;
@@ -18,6 +21,24 @@ import codechicken.lib.asm.ASMHelper;
 public class Transformer implements IClassTransformer {
 
 	public void transform(ClassNode node) throws Exception {
+		if(node.name.equals("net/minecraftforge/fml/common/registry/ObjectHolderRegistry")) {
+			System.out.println(node.name);
+			for(MethodNode method : node.methods) {
+				if(method.name.equals("scanClassForFields") && method.desc.equals("(Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Class;Z)V")) {
+					ListIterator<AbstractInsnNode> iterator = method.instructions.iterator();
+					while(iterator.hasNext()) {
+						AbstractInsnNode insn = iterator.next();
+						if(insn.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+							MethodInsnNode methodInsn = (MethodInsnNode) insn;
+							if(methodInsn.name.equals("isAnnotationPresent") && methodInsn.desc.equals("(Ljava/lang/Class;)Z")) {
+								method.instructions.set(insn, new MethodInsnNode(Opcodes.INVOKESTATIC, "org/agecraft/hookinator/Hookinator", "isAnnotationNotPresent", "(Ljava/lang/reflect/Field;Ljava/lang/Class;)Z", false));
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		node.access &= ~Opcodes.ACC_PRIVATE;
 		node.access &= ~Opcodes.ACC_PROTECTED;
 		node.access |= Opcodes.ACC_PUBLIC;
@@ -27,13 +48,9 @@ public class Transformer implements IClassTransformer {
 			inner.access |= Opcodes.ACC_PUBLIC;
 		}
 		for(FieldNode field : node.fields) {
-			if((field.access & Opcodes.ACC_PRIVATE) != 0) {
-				field.access &= ~Opcodes.ACC_PRIVATE;
-				field.access |= Opcodes.ACC_PUBLIC;
-			}
-//			field.access &= ~Opcodes.ACC_PRIVATE;
-//			field.access &= ~Opcodes.ACC_PROTECTED;
-//			field.access |= Opcodes.ACC_PUBLIC;
+			field.access &= ~Opcodes.ACC_PRIVATE;
+			field.access &= ~Opcodes.ACC_PROTECTED;
+			field.access |= Opcodes.ACC_PUBLIC;
 		}
 		for(MethodNode method : node.methods) {
 			method.access &= ~Opcodes.ACC_PRIVATE;
@@ -57,9 +74,9 @@ public class Transformer implements IClassTransformer {
 				transform(node);
 
 				bytes = ASMHelper.createBytes(node, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-				if(ASMHelper.config.getTag("dump_asm").getBooleanValue(true)) {
-					ASMHelper.dump(bytes, new File("asm/hookinator/" + node.name.replace('/', '#') + ".txt"), false, false);
-				}
+				//if(ASMHelper.config.getTag("dump_asm").getBooleanValue(true)) {
+				//	ASMHelper.dump(bytes, new File("asm/hookinator/" + node.name.replace('/', '#') + ".txt"), false, false);
+				//}
 			} catch(Exception e) {
 				ASMHelper.dump(bytes, new File("asm/hookinator/" + node.name.replace('/', '#') + ".txt"), false, false);
 				throw e;
