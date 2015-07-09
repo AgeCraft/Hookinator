@@ -32,7 +32,7 @@ import codechicken.lib.asm.ObfMapping;
 import com.google.common.collect.Lists;
 
 public class Transformer implements IClassTransformer {
-	
+
 	public boolean transform(ClassNode node) throws Exception {
 		if(node.name.equals("net/minecraftforge/fml/common/registry/ObjectHolderRegistry")) {
 			for(MethodNode method : node.methods) {
@@ -50,7 +50,7 @@ public class Transformer implements IClassTransformer {
 				}
 			}
 		}
-		
+
 		node.access &= ~Opcodes.ACC_PRIVATE;
 		node.access &= ~Opcodes.ACC_PROTECTED;
 		node.access |= Opcodes.ACC_PUBLIC;
@@ -69,7 +69,7 @@ public class Transformer implements IClassTransformer {
 			method.access &= ~Opcodes.ACC_PROTECTED;
 			method.access |= Opcodes.ACC_PUBLIC;
 		}
-		
+
 		boolean addedHook = false;
 		String name = node.name.replace('/', '.');
 		if(HookLoader.hooks.containsKey(name)) {
@@ -85,10 +85,10 @@ public class Transformer implements IClassTransformer {
 		}
 		return addedHook;
 	}
-	
+
 	public InsnList generateHook(String className, MethodNode method) {
 		InsnList list = new InsnList();
-		
+
 		String args = method.desc.substring(1).split("\\)")[0];
 		ArrayList<String> arguments = Lists.newArrayList();
 		int typeStart = -1;
@@ -106,9 +106,9 @@ public class Transformer implements IClassTransformer {
 		if(returnType.startsWith("L")) {
 			returnType = returnType.substring(1, returnType.length() - 1);
 		}
-		
+
 		boolean isStatic = (method.access & Opcodes.ACC_STATIC) != 0;
-		
+
 		list.add(new LdcInsnNode(className));
 		list.add(new LdcInsnNode(method.name));
 		list.add(new LdcInsnNode(method.desc));
@@ -119,7 +119,7 @@ public class Transformer implements IClassTransformer {
 		}
 		list.add(new IntInsnNode(Opcodes.BIPUSH, arguments.size()));
 		list.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
-		
+
 		int resultIndex = method.maxLocals;
 		int index = 0;
 		for(int i = isStatic ? 0 : 1; i < arguments.size(); i++) {
@@ -144,18 +144,18 @@ public class Transformer implements IClassTransformer {
 			list.add(new InsnNode(Opcodes.AASTORE));
 			index++;
 		}
-		
+
 		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/agecraft/hookinator/Hookinator", "hook", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/Object;)Lorg/agecraft/hookinator/HookEvent;", false));
 		list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
 		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookEvent", "isCanceled", "()Z", false));
-		
+
 		LabelNode label1 = new LabelNode();
 		list.add(new JumpInsnNode(Opcodes.IFEQ, label1));
-		
+
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
 		list.add(new FieldInsnNode(Opcodes.GETFIELD, "org/agecraft/hookinator/HookEvent", "returnValue", "Ljava/lang/Object;"));
-		
+
 		if(returnType.equals("V")) {
 			list.add(new InsnNode(Opcodes.RETURN));
 		} else if(returnType.endsWith("Z") || returnType.endsWith("B") || returnType.endsWith("S") || returnType.endsWith("I")) {
@@ -178,9 +178,9 @@ public class Transformer implements IClassTransformer {
 			list.add(new TypeInsnNode(Opcodes.CHECKCAST, returnType));
 			list.add(new InsnNode(Opcodes.ARETURN));
 		}
-		
+
 		list.add(label1);
-		
+
 		return list;
 	}
 

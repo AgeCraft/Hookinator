@@ -31,7 +31,7 @@ import com.google.common.collect.Multimap;
 public class HookLoader {
 
 	public static Logger logger = LogManager.getLogger("Hookinator");
-	
+
 	private static ArrayList<IHookLoader> loaders = Lists.newArrayList();
 	protected static Multimap<String, ObfMapping> hooks = HashMultimap.create();
 
@@ -48,7 +48,7 @@ public class HookLoader {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public static void load() {
 		for(IHookLoader loader : loaders) {
 			loader.load();
@@ -61,7 +61,7 @@ public class HookLoader {
 		}
 		hooks.put(hook.javaClass(), hook);
 	}
-	
+
 	public static void unregisterHook(ObfMapping hook) {
 		hooks.remove(hook.javaClass(), hook);
 	}
