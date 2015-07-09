@@ -2,27 +2,27 @@ package org.agecraft.hookinator;
 
 import java.lang.reflect.Field;
 
-import codechicken.lib.asm.ObfMapping;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import net.minecraftforge.fml.common.eventhandler.EventBus;
 
 public class Hookinator {
 	
-	public static Multimap<String, ObfMapping> hooks = HashMultimap.create();
+	public static final EventBus BUS = new EventBus();
 
-	public static void registerHook(ObfMapping hook) {
-		if(!hook.isMethod()) {
-			throw new IllegalStateException("Only methods can be hooked");
-		}
-		hooks.put(hook.javaClass(), hook);
-	}
-	
-	public static void unregisterHook(ObfMapping hook) {
-		hooks.remove(hook.javaClass(), hook);
-	}
-	
 	public static boolean isAnnotationNotPresent(Field field, Class clazz) {
 		return !field.isAnnotationPresent(clazz);
+	}
+	
+	public static void registerListener(Object target) {
+		BUS.register(target);
+	}
+	
+	public static void unregisterListener(Object target) {
+		BUS.unregister(target);
+	}
+	
+	public static HookEvent hook(String className, String name, String desc, Object self, Object... args) {
+		HookEvent event = new HookEvent(className, name, desc, self, args);
+		BUS.post(event);
+		return event;
 	}
 }
