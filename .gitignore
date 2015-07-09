@@ -1,0 +1,33 @@
+## Gradle
+.gradle
+build
+gradle
+gradlew
+gradlew.bat
+
+## ForgeGradle
+run
+minecraft
+
+## Eclipse
+eclipse
+.settings
+.metadata
+.classpath
+.project
+bin
+
+## IntelliJ
+out
+.idea
+*.iml
+*.ipr
+*.iws
+atlassian-ide-plugin.xml
+
+## Mac
+.DS_Store
+
+## Project
+libs
+

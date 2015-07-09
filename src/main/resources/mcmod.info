@@ -1,0 +1,16 @@
+[
+{
+  "modid": "Hookinator",
+  "name": "Hookinator",
+  "description": "A simple Forge coremod that allows for easy hooking of Minecraft base methods",
+  "version": "${version}",
+  "mcversion": "${mc_version}",
+  "url": "https://github.com/AgeCraft/Hookinator",
+  "updateUrl": "",
+  "authorList": ["DanielHuisman"],
+  "credits": "AgeCraft Team",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
