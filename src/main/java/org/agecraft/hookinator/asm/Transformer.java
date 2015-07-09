@@ -5,6 +5,7 @@ import java.util.ListIterator;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
+import org.agecraft.hookinator.Hookinator;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -13,10 +14,13 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import codechicken.lib.asm.ASMHelper;
+import codechicken.lib.asm.ObfMapping;
 
 public class Transformer implements IClassTransformer {
 
@@ -57,6 +61,30 @@ public class Transformer implements IClassTransformer {
 			method.access &= ~Opcodes.ACC_PROTECTED;
 			method.access |= Opcodes.ACC_PUBLIC;
 		}
+		
+		if(Hookinator.hooks.containsKey(node.name)) {
+			for(ObfMapping hook : Hookinator.hooks.get(node.name)) {
+				for(MethodNode method : node.methods) {
+					if(hook.matches(method)) {
+						method.instructions.insert(generateHook(method));
+					}
+				}
+			}
+		}
+	}
+	
+	public InsnList generateHook(MethodNode method) {
+		InsnList list = new InsnList();
+		
+		String returnType = method.desc.split(")")[1];
+		
+		if(returnType.equals("V")) {
+			list.add(new InsnNode(Opcodes.RETURN));
+		} else {
+			//TODO: cast to return type
+			list.add(new InsnNode(Opcodes.ARETURN));
+		}
+		return list;
 	}
 
 	@Override
