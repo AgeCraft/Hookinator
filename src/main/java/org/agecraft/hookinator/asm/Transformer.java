@@ -2,7 +2,6 @@ package org.agecraft.hookinator.asm;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.ListIterator;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
@@ -10,7 +9,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -34,36 +33,43 @@ import com.google.common.collect.Lists;
 public class Transformer implements IClassTransformer {
 
 	public boolean transform(ClassNode node) throws Exception {
-		if(node.name.equals("net/minecraftforge/fml/common/registry/ObjectHolderRegistry")) {
-			for(MethodNode method : node.methods) {
-				if(method.name.equals("scanClassForFields") && method.desc.equals("(Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Class;Z)V")) {
-					ListIterator<AbstractInsnNode> iterator = method.instructions.iterator();
-					while(iterator.hasNext()) {
-						AbstractInsnNode insn = iterator.next();
-						if(insn.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-							MethodInsnNode methodInsn = (MethodInsnNode) insn;
-							if(methodInsn.name.equals("isAnnotationPresent") && methodInsn.desc.equals("(Ljava/lang/Class;)Z")) {
-								method.instructions.set(insn, new MethodInsnNode(Opcodes.INVOKESTATIC, "org/agecraft/hookinator/Hookinator", "isAnnotationNotPresent", "(Ljava/lang/reflect/Field;Ljava/lang/Class;)Z", false));
-							}
-						}
-					}
-				}
-			}
-		}
+		String name = node.name.replace('/', '.');
 
 		node.access &= ~Opcodes.ACC_PRIVATE;
 		node.access &= ~Opcodes.ACC_PROTECTED;
 		node.access |= Opcodes.ACC_PUBLIC;
+		
 		for(InnerClassNode inner : node.innerClasses) {
 			inner.access &= ~Opcodes.ACC_PRIVATE;
 			inner.access &= ~Opcodes.ACC_PROTECTED;
 			inner.access |= Opcodes.ACC_PUBLIC;
 		}
-		for(FieldNode field : node.fields) {
-			field.access &= ~Opcodes.ACC_PRIVATE;
-			field.access &= ~Opcodes.ACC_PROTECTED;
-			field.access |= Opcodes.ACC_PUBLIC;
+		
+		boolean isObjectHolder = name.equals("net.minecraft.init.Blocks") || name.equals("net.minecraft.init.Items");
+		if(node.visibleAnnotations != null) {
+			for(AnnotationNode annotation : node.visibleAnnotations) {
+				if(annotation.desc.contains("ObjectHolder")) {
+					System.out.println(annotation.desc);
+					isObjectHolder = true;
+				}
+			}
 		}
+		if(node.invisibleAnnotations != null) {
+			for(AnnotationNode annotation : node.invisibleAnnotations) {
+				if(annotation.desc.contains("ObjectHolder")) {
+					System.out.println(annotation.desc);
+					isObjectHolder = true;
+				}
+			}
+		}
+		if(!isObjectHolder) {
+			for(FieldNode field : node.fields) {
+				field.access &= ~Opcodes.ACC_PRIVATE;
+				field.access &= ~Opcodes.ACC_PROTECTED;
+				field.access |= Opcodes.ACC_PUBLIC;
+			}
+		}
+		
 		for(MethodNode method : node.methods) {
 			method.access &= ~Opcodes.ACC_PRIVATE;
 			method.access &= ~Opcodes.ACC_PROTECTED;
@@ -71,7 +77,6 @@ public class Transformer implements IClassTransformer {
 		}
 
 		boolean addedHook = false;
-		String name = node.name.replace('/', '.');
 		if(HookLoader.hooks.containsKey(name)) {
 			for(ObfMapping hook : HookLoader.hooks.get(name)) {
 				for(MethodNode method : node.methods) {
