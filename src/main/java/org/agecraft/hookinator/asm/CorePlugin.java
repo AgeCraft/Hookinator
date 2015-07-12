@@ -1,10 +1,17 @@
 package org.agecraft.hookinator.asm;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.ByteSource;
+import com.google.common.io.CharSource;
 
 import net.minecraftforge.fml.relauncher.IFMLCallHook;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
@@ -52,7 +59,6 @@ public class CorePlugin implements IFMLLoadingPlugin, IFMLCallHook {
 	}
 
 	public void discoverHookinatorMods() {
-		HookLoader.init();
 		File modsDir = new File(CodeChickenCorePlugin.minecraftDir, "mods");
 		for(File file : modsDir.listFiles()) {
 			scanMod(file);
@@ -63,7 +69,6 @@ public class CorePlugin implements IFMLLoadingPlugin, IFMLCallHook {
 				scanMod(file);
 			}
 		}
-		HookLoader.load();
 	}
 
 	public void scanMod(File file) {
@@ -81,15 +86,32 @@ public class CorePlugin implements IFMLLoadingPlugin, IFMLCallHook {
 				if(attr == null) {
 					return;
 				}
-				String hookLoader = attr.getValue("HookLoader");
-				if(hookLoader != null) {
-					HookLoader.add(hookLoader, jar, file);
+				String hookFile = attr.getValue("HookFile");
+				if(hookFile != null) {
+					JarEntry jarEntry = jar.getJarEntry(hookFile);
+					HookLoader.load(String.format("%s!%s", jar.getName(), hookFile), CharSource.wrap(new JarByteSource(jar, jarEntry).asCharSource(Charsets.UTF_8).read()));
 				}
 			} finally {
 				jar.close();
 			}
 		} catch(Exception e) {
 			e.printStackTrace();
+		}
+	}
+
+	public static class JarByteSource extends ByteSource {
+		
+		private JarFile jar;
+		private JarEntry entry;
+
+		public JarByteSource(JarFile jar, JarEntry entry) {
+			this.jar = jar;
+			this.entry = entry;
+		}
+
+		@Override
+		public InputStream openStream() throws IOException {
+			return jar.getInputStream(entry);
 		}
 	}
 }

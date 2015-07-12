@@ -5,28 +5,25 @@ import java.util.ArrayList;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
+import org.agecraft.hookinator.HookReference;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import codechicken.lib.asm.ASMHelper;
-import codechicken.lib.asm.ObfMapping;
 
 import com.google.common.collect.Lists;
 
@@ -48,16 +45,14 @@ public class Transformer implements IClassTransformer {
 		boolean isObjectHolder = name.equals("net.minecraft.init.Blocks") || name.equals("net.minecraft.init.Items");
 		if(node.visibleAnnotations != null) {
 			for(AnnotationNode annotation : node.visibleAnnotations) {
-				if(annotation.desc.contains("ObjectHolder")) {
-					System.out.println(annotation.desc);
+				if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
 					isObjectHolder = true;
 				}
 			}
 		}
 		if(node.invisibleAnnotations != null) {
 			for(AnnotationNode annotation : node.invisibleAnnotations) {
-				if(annotation.desc.contains("ObjectHolder")) {
-					System.out.println(annotation.desc);
+				if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
 					isObjectHolder = true;
 				}
 			}
@@ -78,12 +73,11 @@ public class Transformer implements IClassTransformer {
 
 		boolean addedHook = false;
 		if(HookLoader.hooks.containsKey(name)) {
-			for(ObfMapping hook : HookLoader.hooks.get(name)) {
+			for(HookReference reference : HookLoader.hooks.get(name)) {
 				for(MethodNode method : node.methods) {
-					if(hook.matches(method)) {
+					if(reference.matches(method)) {
 						addedHook = true;
-						method.instructions.insert(generateHook(name, method));
-
+						method.instructions.insert(generateHook(reference, method));
 					}
 				}
 			}
@@ -91,7 +85,7 @@ public class Transformer implements IClassTransformer {
 		return addedHook;
 	}
 
-	public InsnList generateHook(String className, MethodNode method) {
+	public InsnList generateHook(HookReference reference, MethodNode method) {
 		InsnList list = new InsnList();
 
 		String args = method.desc.substring(1).split("\\)")[0];
@@ -113,53 +107,38 @@ public class Transformer implements IClassTransformer {
 		}
 
 		boolean isStatic = (method.access & Opcodes.ACC_STATIC) != 0;
-
-		list.add(new LdcInsnNode(className));
-		list.add(new LdcInsnNode(method.name));
-		list.add(new LdcInsnNode(method.desc));
-		if(isStatic) {
-			list.add(new InsnNode(Opcodes.ACONST_NULL));
-		} else {
+		int resultIndex = method.maxLocals;
+		
+		if(!isStatic) {
 			list.add(new VarInsnNode(Opcodes.ALOAD, 0));
 		}
-		list.add(new IntInsnNode(Opcodes.BIPUSH, arguments.size()));
-		list.add(new TypeInsnNode(Opcodes.ANEWARRAY, "java/lang/Object"));
-
-		int resultIndex = method.maxLocals;
-		int index = 0;
+		
 		for(int i = isStatic ? 0 : 1; i < arguments.size(); i++) {
 			String type = arguments.get(i);
-			list.add(new InsnNode(Opcodes.DUP));
-			list.add(new IntInsnNode(Opcodes.BIPUSH, index));
 			if(type.equals("I")) {
 				list.add(new VarInsnNode(Opcodes.ILOAD, i));
-				list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
 			} else if(type.equals("D")) {
 				list.add(new VarInsnNode(Opcodes.DLOAD, i));
-				list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false));
 			} else if(type.equals("F")) {
 				list.add(new VarInsnNode(Opcodes.FLOAD, i));
-				list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false));
 			} else if(type.equals("J")) {
 				list.add(new VarInsnNode(Opcodes.LLOAD, i));
-				list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
 			} else {
 				list.add(new VarInsnNode(Opcodes.ALOAD, i));
 			}
-			list.add(new InsnNode(Opcodes.AASTORE));
-			index++;
+			list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
 		}
-
-		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/agecraft/hookinator/Hookinator", "hook", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/Object;)Lorg/agecraft/hookinator/HookEvent;", false));
+		
+		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, reference.callClassName, reference.callName, reference.callDesc, false));
 		list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
+		
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookEvent", "isCanceled", "()Z", false));
-
+		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookResult", "isCanceled", "()Z", false));
 		LabelNode label1 = new LabelNode();
 		list.add(new JumpInsnNode(Opcodes.IFEQ, label1));
 
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new FieldInsnNode(Opcodes.GETFIELD, "org/agecraft/hookinator/HookEvent", "returnValue", "Ljava/lang/Object;"));
+		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookResult", "getReturnValue", "()Ljava/lang/Object;", false));
 
 		if(returnType.equals("V")) {
 			list.add(new InsnNode(Opcodes.RETURN));
