@@ -35,13 +35,13 @@ public class Transformer implements IClassTransformer {
 		node.access &= ~Opcodes.ACC_PRIVATE;
 		node.access &= ~Opcodes.ACC_PROTECTED;
 		node.access |= Opcodes.ACC_PUBLIC;
-		
+
 		for(InnerClassNode inner : node.innerClasses) {
 			inner.access &= ~Opcodes.ACC_PRIVATE;
 			inner.access &= ~Opcodes.ACC_PROTECTED;
 			inner.access |= Opcodes.ACC_PUBLIC;
 		}
-		
+
 		boolean isObjectHolder = name.equals("net.minecraft.init.Blocks") || name.equals("net.minecraft.init.Items");
 		if(node.visibleAnnotations != null) {
 			for(AnnotationNode annotation : node.visibleAnnotations) {
@@ -64,7 +64,7 @@ public class Transformer implements IClassTransformer {
 				field.access |= Opcodes.ACC_PUBLIC;
 			}
 		}
-		
+
 		for(MethodNode method : node.methods) {
 			method.access &= ~Opcodes.ACC_PRIVATE;
 			method.access &= ~Opcodes.ACC_PROTECTED;
@@ -72,12 +72,13 @@ public class Transformer implements IClassTransformer {
 		}
 
 		boolean addedHook = false;
-		if(HookLoader.hooks.containsKey(name)) {
-			for(HookReference reference : HookLoader.hooks.get(name)) {
+		if(HookRegistry.instance().hooks.containsKey(name)) {
+			for(HookReference reference : HookRegistry.instance().hooks.get(name)) {
 				for(MethodNode method : node.methods) {
 					if(reference.matches(method)) {
 						addedHook = true;
 						method.instructions.insert(generateHook(reference, method));
+						CorePlugin.logger.debug(String.format("Inserted hook %s %s%s into %s %s", reference.callClassName, reference.callName, reference.desc, reference.className, reference.name));
 					}
 				}
 			}
@@ -108,30 +109,30 @@ public class Transformer implements IClassTransformer {
 
 		boolean isStatic = (method.access & Opcodes.ACC_STATIC) != 0;
 		int resultIndex = method.maxLocals;
-		
+
 		if(!isStatic) {
 			list.add(new VarInsnNode(Opcodes.ALOAD, 0));
 		}
-		
-		for(int i = isStatic ? 0 : 1; i < arguments.size(); i++) {
+
+		for(int i = 0; i < arguments.size(); i++) {
 			String type = arguments.get(i);
+			int index = isStatic ? i : i + 1;
 			if(type.equals("I")) {
-				list.add(new VarInsnNode(Opcodes.ILOAD, i));
+				list.add(new VarInsnNode(Opcodes.ILOAD, index));
 			} else if(type.equals("D")) {
-				list.add(new VarInsnNode(Opcodes.DLOAD, i));
+				list.add(new VarInsnNode(Opcodes.DLOAD, index));
 			} else if(type.equals("F")) {
-				list.add(new VarInsnNode(Opcodes.FLOAD, i));
+				list.add(new VarInsnNode(Opcodes.FLOAD, index));
 			} else if(type.equals("J")) {
-				list.add(new VarInsnNode(Opcodes.LLOAD, i));
+				list.add(new VarInsnNode(Opcodes.LLOAD, index));
 			} else {
-				list.add(new VarInsnNode(Opcodes.ALOAD, i));
+				list.add(new VarInsnNode(Opcodes.ALOAD, index));
 			}
-			list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
 		}
-		
-		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, reference.callClassName, reference.callName, reference.callDesc, false));
+
+		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, reference.callClassName, reference.callName, isStatic ? reference.callDescStatic : reference.callDesc, false));
 		list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
-		
+
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
 		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookResult", "isCanceled", "()Z", false));
 		LabelNode label1 = new LabelNode();

@@ -6,50 +6,41 @@ import codechicken.lib.asm.ObfMapping;
 
 public class HookReference {
 
-	public ObfMapping mapping;
-	
 	public String className;
 	public String name;
 	public String desc;
-	
+
 	public String callClassName;
 	public String callName;
 	public String callDesc;
-	
+	public String callDescStatic;
+
+	public ObfMapping mapping;
+
 	public HookReference(String className, String name, String desc, String callClassName, String callName) {
 		this.className = className;
 		this.name = name;
 		this.desc = desc;
-		
-		this.callClassName = callClassName;
+
+		this.callClassName = callClassName.replace('.', '/');
 		this.callName = callName;
-		this.callDesc = desc; //TODO: insert instance parameter if not static
-		
-		//TODO: create mapping if base class
-		
-//		this.hook = hook;
-//		this.mapping = hook.className().startsWith("net.minecraft.") ? new ObfMapping(hook.className().replace('.', '/'), hook.name(), hook.desc()) : null;
-//		
-//		this.callClassName = methodClass.getName().replace('.', '/');
-//		this.callName = method.getName();
-//		Class<?>[] parameters = method.getParameterTypes();
-//		StringBuilder sb = new StringBuilder();
-//		for(int i = 0; i < parameters.length; i++) {
-//			if(parameters[i].isPrimitive() || parameters[i].isArray()) {
-//				sb.append(parameters[i].getName());
-//			} else {
-//				sb.append("L");
-//				sb.append(parameters[i].getName().replace('.', '/'));
-//				sb.append(";");
-//			}
-//		}
-//		this.callDesc = sb.toString();
+		this.callDesc = "(L" + className.replace('.', '/') + ";" + desc.substring(1, desc.indexOf(")")) + ")Lorg/agecraft/hookinator/HookResult;";
+		this.callDescStatic = desc.substring(0, desc.indexOf(")")) + ")Lorg/agecraft/hookinator/HookResult;";
+
+		if(className.startsWith("net.minecraft.")) {
+			this.mapping = new ObfMapping(className.replace('.', '/'), name, desc).toClassloading();
+		}
 	}
-	
+
 	public boolean matches(MethodNode method) {
 		if(mapping != null && mapping.matches(method)) {
 			return true;
 		}
 		return name.equals(method.name) && desc.equals(method.desc);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("Hook[%s %s%s --> %s%s%s]", className, name, desc, callClassName.replace('/', '.'), callName, callDesc);
 	}
 }

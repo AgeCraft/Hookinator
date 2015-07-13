@@ -1,26 +1,24 @@
 package org.agecraft.hookinator.asm;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.ByteSource;
-import com.google.common.io.CharSource;
 
 import net.minecraftforge.fml.relauncher.IFMLCallHook;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin.TransformerExclusions;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import codechicken.core.launch.CodeChickenCorePlugin;
 
-@TransformerExclusions({"org.agecraft.hookinator.asm"})
+@TransformerExclusions({"org.agecraft.hookinator.asm", "org.agecraft.hookinator.api"})
 public class CorePlugin implements IFMLLoadingPlugin, IFMLCallHook {
 
+	public static Logger logger = LogManager.getLogger("Hookinator");
 	public static File location;
 
 	@Override
@@ -59,6 +57,12 @@ public class CorePlugin implements IFMLLoadingPlugin, IFMLCallHook {
 	}
 
 	public void discoverHookinatorMods() {
+		logger.info("Loading hooks");
+		String hookLoaderProperty = System.getProperty("hookinator.loader");
+		if(hookLoaderProperty != null && hookLoaderProperty.length() > 0) {
+			HookRegistry.instance().load(hookLoaderProperty);
+		}
+
 		File modsDir = new File(CodeChickenCorePlugin.minecraftDir, "mods");
 		for(File file : modsDir.listFiles()) {
 			scanMod(file);
@@ -69,6 +73,8 @@ public class CorePlugin implements IFMLLoadingPlugin, IFMLCallHook {
 				scanMod(file);
 			}
 		}
+		HookRegistry.instance().load();
+		logger.info("Found " + HookRegistry.instance().hooks.size() + " hook" + (HookRegistry.instance().hooks.size() > 1 ? "s" : ""));
 	}
 
 	public void scanMod(File file) {
@@ -86,32 +92,15 @@ public class CorePlugin implements IFMLLoadingPlugin, IFMLCallHook {
 				if(attr == null) {
 					return;
 				}
-				String hookFile = attr.getValue("HookFile");
-				if(hookFile != null) {
-					JarEntry jarEntry = jar.getJarEntry(hookFile);
-					HookLoader.load(String.format("%s!%s", jar.getName(), hookFile), CharSource.wrap(new JarByteSource(jar, jarEntry).asCharSource(Charsets.UTF_8).read()));
+				String hookLoader = attr.getValue("HookLoader");
+				if(hookLoader != null) {
+					HookRegistry.instance().load(hookLoader, jar, file);
 				}
 			} finally {
 				jar.close();
 			}
 		} catch(Exception e) {
 			e.printStackTrace();
-		}
-	}
-
-	public static class JarByteSource extends ByteSource {
-		
-		private JarFile jar;
-		private JarEntry entry;
-
-		public JarByteSource(JarFile jar, JarEntry entry) {
-			this.jar = jar;
-			this.entry = entry;
-		}
-
-		@Override
-		public InputStream openStream() throws IOException {
-			return jar.getInputStream(entry);
 		}
 	}
 }
