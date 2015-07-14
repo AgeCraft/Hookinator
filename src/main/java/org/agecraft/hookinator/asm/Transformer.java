@@ -21,37 +21,39 @@ public class Transformer implements IClassTransformer {
 
 	public boolean transform(ClassNode node) throws Exception {
 		String name = node.name.replace('/', '.');
-
-		node.access &= ~Opcodes.ACC_PRIVATE;
-		node.access &= ~Opcodes.ACC_PROTECTED;
-		node.access |= Opcodes.ACC_PUBLIC;
-
-		for(InnerClassNode inner : node.innerClasses) {
-			inner.access &= ~Opcodes.ACC_PRIVATE;
-			inner.access &= ~Opcodes.ACC_PROTECTED;
-			inner.access |= Opcodes.ACC_PUBLIC;
-		}
-
-		boolean isObjectHolder = name.equals("net.minecraft.init.Blocks") || name.equals("net.minecraft.init.Items");
-		if(node.visibleAnnotations != null) {
-			for(AnnotationNode annotation : node.visibleAnnotations) {
-				if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
-					isObjectHolder = true;
+		
+		if(name.startsWith("net.minecraft")) {
+			node.access &= ~Opcodes.ACC_PRIVATE;
+			node.access &= ~Opcodes.ACC_PROTECTED;
+			node.access |= Opcodes.ACC_PUBLIC;
+	
+			for(InnerClassNode inner : node.innerClasses) {
+				inner.access &= ~Opcodes.ACC_PRIVATE;
+				inner.access &= ~Opcodes.ACC_PROTECTED;
+				inner.access |= Opcodes.ACC_PUBLIC;
+			}
+	
+			boolean isObjectHolder = name.equals("net.minecraft.init.Blocks") || name.equals("net.minecraft.init.Items");
+			if(node.visibleAnnotations != null) {
+				for(AnnotationNode annotation : node.visibleAnnotations) {
+					if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
+						isObjectHolder = true;
+					}
 				}
 			}
-		}
-		if(node.invisibleAnnotations != null) {
-			for(AnnotationNode annotation : node.invisibleAnnotations) {
-				if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
-					isObjectHolder = true;
+			if(node.invisibleAnnotations != null) {
+				for(AnnotationNode annotation : node.invisibleAnnotations) {
+					if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
+						isObjectHolder = true;
+					}
 				}
 			}
-		}
-		if(!isObjectHolder) {
-			for(FieldNode field : node.fields) {
-				field.access &= ~Opcodes.ACC_PRIVATE;
-				field.access &= ~Opcodes.ACC_PROTECTED;
-				field.access |= Opcodes.ACC_PUBLIC;
+			if(!isObjectHolder) {
+				for(FieldNode field : node.fields) {
+					field.access &= ~Opcodes.ACC_PRIVATE;
+					field.access &= ~Opcodes.ACC_PROTECTED;
+					field.access |= Opcodes.ACC_PUBLIC;
+				}
 			}
 		}
 
