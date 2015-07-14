@@ -38,12 +38,13 @@ public class InsertHookMethodHook extends MethodHook {
 
 	@Override
 	public void apply(ClassNode node, MethodNode method) {
+		CorePlugin.logger.debug(String.format("Inserted hook %s %s%s %s %s %s", callClassName, callName, callDesc, after ? " after " : " before ", className, name));
+
 		if(!after) {
 			method.instructions.insert(generate(this, method));
 		} else {
 			method.instructions.insertBefore(method.instructions.getLast(), generate(this, method));
 		}
-		CorePlugin.logger.debug(String.format("Inserted hook %s %s%s %s %s %s", callClassName, callName, desc, after ? " after " : " before ", className, name));
 	}
 
 	@Override

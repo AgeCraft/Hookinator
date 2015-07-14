@@ -18,7 +18,7 @@ public abstract class ClassHook implements IHook {
 			this.mapping = new ObfMapping(className.replace('.', '/')).toClassloading();
 		}
 	}
-	
+
 	@Override
 	public String getClassName() {
 		return className;
@@ -26,7 +26,7 @@ public abstract class ClassHook implements IHook {
 
 	@Override
 	public abstract void apply(ClassNode node);
-	
+
 	@Override
 	public String toString() {
 		return String.format("ClassHook[%s]", className);

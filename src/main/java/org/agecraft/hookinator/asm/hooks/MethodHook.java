@@ -27,7 +27,7 @@ public abstract class MethodHook extends ClassHook {
 		}
 		return name.equals(method.name) && desc.equals(method.desc);
 	}
-	
+
 	public MethodNode findMethod(ClassNode node) {
 		for(MethodNode method : node.methods) {
 			if(matches(method)) {

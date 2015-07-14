@@ -2,6 +2,7 @@ package org.agecraft.hookinator.asm.hooks;
 
 import java.util.ArrayList;
 
+import org.agecraft.hookinator.asm.CorePlugin;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
@@ -31,6 +32,8 @@ public class ReplaceMethodHook extends MethodHook {
 
 	@Override
 	public void apply(ClassNode node, MethodNode method) {
+		CorePlugin.logger.debug(String.format("Replacing method %s %s%s with call to %s %s%s", className, name, desc, callClassName, callName, desc));
+
 		method.instructions.clear();
 		method.instructions.add(generate(this, method));
 	}

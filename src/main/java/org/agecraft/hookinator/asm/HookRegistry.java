@@ -20,6 +20,7 @@ import org.agecraft.hookinator.api.IHookLoader;
 import org.agecraft.hookinator.api.IHookRegistry;
 import org.agecraft.hookinator.asm.hooks.ChangeFieldHook;
 import org.agecraft.hookinator.asm.hooks.InsertHookMethodHook;
+import org.agecraft.hookinator.asm.hooks.ReplaceInstructionsMethodHook;
 import org.agecraft.hookinator.asm.hooks.ReplaceMethodHook;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -114,6 +115,16 @@ public class HookRegistry implements IHookRegistry {
 	@Override
 	public void replaceMethod(String className, String name, String desc, String callClassName, String callName) {
 		addHook(new ReplaceMethodHook(className, name, desc, callClassName, callName));
+	}
+
+	@Override
+	public void replaceMethod(String className, String name, String desc, ASMBlock replacement) {
+		addHook(new ReplaceInstructionsMethodHook(className, name, desc, replacement));
+	}
+
+	@Override
+	public void findAndReplaceMethodInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock replacement) {
+		addHook(new ReplaceInstructionsMethodHook(className, name, desc, needle, replacement));
 	}
 
 	@Override
