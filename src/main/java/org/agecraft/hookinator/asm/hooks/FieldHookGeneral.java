@@ -1,9 +1,8 @@
 package org.agecraft.hookinator.asm.hooks;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
-
-import com.sun.xml.internal.ws.org.objectweb.asm.Opcodes;
 
 public class FieldHookGeneral extends FieldHook {
 
