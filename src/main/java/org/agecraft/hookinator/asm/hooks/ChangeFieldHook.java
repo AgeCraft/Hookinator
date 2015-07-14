@@ -4,13 +4,13 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 
-public class FieldHookGeneral extends FieldHook {
+public class ChangeFieldHook extends FieldHook {
 
 	public int newAccess;
 	public String newDesc;
 	public Object newValue;
 	
-	public FieldHookGeneral(String className, String name, String desc, int newAccess, String newDesc, Object newValue) {
+	public ChangeFieldHook(String className, String name, String desc, int newAccess, String newDesc, Object newValue) {
 		super(className, name, desc);
 		
 		this.newAccess = newAccess;
@@ -22,27 +22,27 @@ public class FieldHookGeneral extends FieldHook {
 		}
 	}
 	
-	public FieldHookGeneral(String className, String name, String desc, int newAccess) {
+	public ChangeFieldHook(String className, String name, String desc, int newAccess) {
 		this(className, name, desc, newAccess, null, null);
 	}
 	
-	public FieldHookGeneral(String className, String name, String desc, String newDesc) {
+	public ChangeFieldHook(String className, String name, String desc, String newDesc) {
 		this(className, name, desc, -1, newDesc, null);
 	}
 	
-	public FieldHookGeneral(String className, String name, String desc, Object newValue) {
+	public ChangeFieldHook(String className, String name, String desc, Object newValue) {
 		this(className, name, desc, -1, null, newValue);
 	}
 	
-	public FieldHookGeneral(String className, String name, String desc, int newAccess, String newDesc) {
+	public ChangeFieldHook(String className, String name, String desc, int newAccess, String newDesc) {
 		this(className, name, desc, newAccess, newDesc, null);
 	}
 	
-	public FieldHookGeneral(String className, String name, String desc, int newAccess, Object newValue) {
+	public ChangeFieldHook(String className, String name, String desc, int newAccess, Object newValue) {
 		this(className, name, desc, newAccess, null, newValue);
 	}
 	
-	public FieldHookGeneral(String className, String name, String desc, String newDesc, Object newValue) {
+	public ChangeFieldHook(String className, String name, String desc, String newDesc, Object newValue) {
 		this(className, name, desc, -1, newDesc, newValue);
 	}
 
@@ -64,6 +64,6 @@ public class FieldHookGeneral extends FieldHook {
 	
 	@Override
 	public String toString() {
-		return String.format("FieldHookGeneral[%s %s %s --> %s (access: %s, value: %s)]", className, name, desc, newDesc, Integer.toString(newAccess), newValue == null ? "null" : newValue.toString());
+		return String.format("ChangeFieldHook[%s %s %s --> %s (access: %s, value: %s)]", className, name, desc, newDesc, Integer.toString(newAccess), newValue == null ? "null" : newValue.toString());
 	}
 }

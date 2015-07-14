@@ -18,8 +18,9 @@ import net.minecraft.launchwrapper.LaunchClassLoader;
 import org.agecraft.hookinator.api.IHook;
 import org.agecraft.hookinator.api.IHookLoader;
 import org.agecraft.hookinator.api.IHookRegistry;
-import org.agecraft.hookinator.asm.hooks.FieldHookGeneral;
-import org.agecraft.hookinator.asm.hooks.MethodHookCall;
+import org.agecraft.hookinator.asm.hooks.ChangeFieldHook;
+import org.agecraft.hookinator.asm.hooks.InsertHookMethodHook;
+import org.agecraft.hookinator.asm.hooks.ReplaceMethodHook;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 
@@ -59,70 +60,70 @@ public class HookRegistry implements IHookRegistry {
 		}
 		return instance;
 	}
-	
+
 	@Override
 	public void addHook(IHook hook) {
 		hooks.put(hook.getClassName(), hook);
 	}
-	
+
 	@Override
 	public void removeHook(IHook hook) {
 		hooks.remove(hook.getClassName(), hook);
 	}
-	
+
 	@Override
 	public Map<String, ASMBlock> loadASMBlocks(String path) {
 		return ASMReader.loadResource(path);
 	}
-	
+
 	@Override
 	public void changeField(String className, String name, String desc, int newAccess, String newDesc, Object newValue) {
-		addHook(new FieldHookGeneral(className, name, desc, newAccess, newDesc, newValue));
+		addHook(new ChangeFieldHook(className, name, desc, newAccess, newDesc, newValue));
 	}
-	
+
 	@Override
 	public void changeFieldAccess(String className, String name, String desc, int newAccess) {
-		addHook(new FieldHookGeneral(className, name, desc, newAccess));
+		addHook(new ChangeFieldHook(className, name, desc, newAccess));
 	}
-	
+
 	@Override
 	public void changeFieldDesc(String className, String name, String desc, String newDesc) {
-		addHook(new FieldHookGeneral(className, name, desc, newDesc));
+		addHook(new ChangeFieldHook(className, name, desc, newDesc));
 	}
-	
+
 	@Override
 	public void changeFieldValue(String className, String name, String desc, Object newValue) {
-		addHook(new FieldHookGeneral(className, name, desc, newValue));
+		addHook(new ChangeFieldHook(className, name, desc, newValue));
 	}
-	
+
 	@Override
 	public void changeFieldAccessAndDesc(String className, String name, String desc, int newAccess, String newDesc) {
-		addHook(new FieldHookGeneral(className, name, desc, newAccess, newDesc));
+		addHook(new ChangeFieldHook(className, name, desc, newAccess, newDesc));
 	}
-	
+
 	@Override
 	public void changeFieldAccessAndValue(String className, String name, String desc, int newAccess, Object newValue) {
-		addHook(new FieldHookGeneral(className, name, desc, newAccess,  newValue));
+		addHook(new ChangeFieldHook(className, name, desc, newAccess, newValue));
 	}
-	
+
 	@Override
 	public void changeFieldDescAndValue(String className, String name, String desc, String newDesc, Object newValue) {
-		addHook(new FieldHookGeneral(className, name, desc, newDesc, newValue));
+		addHook(new ChangeFieldHook(className, name, desc, newDesc, newValue));
 	}
 
 	@Override
 	public void replaceMethod(String className, String name, String desc, String callClassName, String callName) {
-		// TODO
+		addHook(new ReplaceMethodHook(className, name, desc, callClassName, callName));
 	}
 
 	@Override
 	public void insertBeforeMethod(String className, String name, String desc, String callClassName, String callName) {
-		addHook(new MethodHookCall(className, name, desc, callClassName, callName, false));
+		addHook(new InsertHookMethodHook(className, name, desc, callClassName, callName, false));
 	}
 
 	@Override
 	public void insertAfterMethod(String className, String name, String desc, String callClassName, String callName) {
-		addHook(new MethodHookCall(className, name, desc, callClassName, callName, true));
+		addHook(new InsertHookMethodHook(className, name, desc, callClassName, callName, true));
 	}
 
 	@Override

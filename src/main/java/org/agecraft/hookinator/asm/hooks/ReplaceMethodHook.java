@@ -2,13 +2,10 @@ package org.agecraft.hookinator.asm.hooks;
 
 import java.util.ArrayList;
 
-import org.agecraft.hookinator.asm.CorePlugin;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -16,42 +13,34 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 import com.google.common.collect.Lists;
 
-public class MethodHookCall extends MethodHook {
+public class ReplaceMethodHook extends MethodHook {
 
 	public String callClassName;
 	public String callName;
 	public String callDesc;
 	public String callDescStatic;
 
-	public boolean after;
-
-	public MethodHookCall(String className, String name, String desc, String callClassName, String callName, boolean after) {
+	public ReplaceMethodHook(String className, String name, String desc, String callClassName, String callName) {
 		super(className, name, desc);
 
 		this.callClassName = callClassName.replace('.', '/');
 		this.callName = callName;
-		this.callDesc = "(L" + className.replace('.', '/') + ";" + desc.substring(1, desc.indexOf(")")) + ")Lorg/agecraft/hookinator/api/HookResult;";
-		this.callDescStatic = desc.substring(0, desc.indexOf(")")) + ")Lorg/agecraft/hookinator/api/HookResult;";
-
-		this.after = after;
+		this.callDesc = "(L" + className.replace('.', '/') + ";" + desc.substring(1);
+		this.callDescStatic = this.desc;
 	}
 
 	@Override
 	public void apply(ClassNode node, MethodNode method) {
-		if(!after) {
-			method.instructions.insert(generate(this, method));
-		} else {
-			method.instructions.insertBefore(method.instructions.getLast(), generate(this, method));
-		}
-		CorePlugin.logger.debug(String.format("Inserted hook %s %s%s %s %s %s", callClassName, callName, desc, after ? " after " : " before ", className, name));
+		method.instructions.clear();
+		method.instructions.add(generate(this, method));
 	}
 
 	@Override
 	public String toString() {
-		return String.format("MethodHookCall[%s %s%s --> %s%s%s]", className, name, desc, callClassName.replace('/', '.'), callName, callDesc);
+		return String.format("ReplaceMethodHook[%s %s%s --> %s %s%s]", className, name, desc, callClassName.replace('/', '.'), callName, callDesc);
 	}
 
-	public static InsnList generate(MethodHookCall hook, MethodNode method) {
+	public static InsnList generate(ReplaceMethodHook hook, MethodNode method) {
 		InsnList list = new InsnList();
 
 		String args = method.desc.substring(1).split("\\)")[0];
@@ -73,8 +62,6 @@ public class MethodHookCall extends MethodHook {
 		}
 
 		boolean isStatic = (method.access & Opcodes.ACC_STATIC) != 0;
-		int resultIndex = method.maxLocals;
-
 		if(!isStatic) {
 			list.add(new VarInsnNode(Opcodes.ALOAD, 0));
 		}
@@ -96,15 +83,6 @@ public class MethodHookCall extends MethodHook {
 		}
 
 		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, hook.callClassName, hook.callName, isStatic ? hook.callDescStatic : hook.callDesc, false));
-		list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
-
-		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/api/HookResult", "isCanceled", "()Z", false));
-		LabelNode label1 = new LabelNode();
-		list.add(new JumpInsnNode(Opcodes.IFEQ, label1));
-
-		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/api/HookResult", "getReturnValue", "()Ljava/lang/Object;", false));
 
 		if(returnType.equals("V")) {
 			list.add(new InsnNode(Opcodes.RETURN));
@@ -128,8 +106,6 @@ public class MethodHookCall extends MethodHook {
 			list.add(new TypeInsnNode(Opcodes.CHECKCAST, returnType));
 			list.add(new InsnNode(Opcodes.ARETURN));
 		}
-
-		list.add(label1);
 
 		return list;
 	}
