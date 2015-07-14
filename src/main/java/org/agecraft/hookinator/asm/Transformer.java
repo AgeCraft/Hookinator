@@ -8,12 +8,7 @@ import org.agecraft.hookinator.api.IHook;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InnerClassNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import codechicken.lib.asm.ASMHelper;
 
@@ -21,48 +16,6 @@ public class Transformer implements IClassTransformer {
 
 	public boolean transform(ClassNode node) throws Exception {
 		String name = node.name.replace('/', '.');
-		
-		if(name.startsWith("net.minecraft")) {
-			node.access &= ~Opcodes.ACC_PRIVATE;
-			node.access &= ~Opcodes.ACC_PROTECTED;
-			node.access |= Opcodes.ACC_PUBLIC;
-	
-			for(InnerClassNode inner : node.innerClasses) {
-				inner.access &= ~Opcodes.ACC_PRIVATE;
-				inner.access &= ~Opcodes.ACC_PROTECTED;
-				inner.access |= Opcodes.ACC_PUBLIC;
-			}
-	
-			boolean isObjectHolder = name.equals("net.minecraft.init.Blocks") || name.equals("net.minecraft.init.Items");
-			if(node.visibleAnnotations != null) {
-				for(AnnotationNode annotation : node.visibleAnnotations) {
-					if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
-						isObjectHolder = true;
-					}
-				}
-			}
-			if(node.invisibleAnnotations != null) {
-				for(AnnotationNode annotation : node.invisibleAnnotations) {
-					if(annotation.desc.equals("net/minecraftforge/fml/common/registry/GameRegistry$ObjectHolder")) {
-						isObjectHolder = true;
-					}
-				}
-			}
-			if(!isObjectHolder) {
-				for(FieldNode field : node.fields) {
-					field.access &= ~Opcodes.ACC_PRIVATE;
-					field.access &= ~Opcodes.ACC_PROTECTED;
-					field.access |= Opcodes.ACC_PUBLIC;
-				}
-			}
-		}
-
-		for(MethodNode method : node.methods) {
-			method.access &= ~Opcodes.ACC_PRIVATE;
-			method.access &= ~Opcodes.ACC_PROTECTED;
-			method.access |= Opcodes.ACC_PUBLIC;
-		}
-
 		boolean addedHook = false;
 		if(HookRegistry.instance().hooks.containsKey(name)) {
 			for(IHook hook : HookRegistry.instance().hooks.get(name)) {
