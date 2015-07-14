@@ -99,12 +99,12 @@ public class MethodHookCall extends MethodHook {
 		list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
 
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookResult", "isCanceled", "()Z", false));
+		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/api/HookResult", "isCanceled", "()Z", false));
 		LabelNode label1 = new LabelNode();
 		list.add(new JumpInsnNode(Opcodes.IFEQ, label1));
 
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookResult", "getReturnValue", "()Ljava/lang/Object;", false));
+		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/api/HookResult", "getReturnValue", "()Ljava/lang/Object;", false));
 
 		if(returnType.equals("V")) {
 			list.add(new InsnNode(Opcodes.RETURN));

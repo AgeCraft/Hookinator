@@ -15,14 +15,17 @@ import java.util.zip.ZipEntry;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 
+import org.agecraft.hookinator.api.IHook;
 import org.agecraft.hookinator.api.IHookLoader;
 import org.agecraft.hookinator.api.IHookRegistry;
-import org.agecraft.hookinator.asm.hooks.ClassHook;
+import org.agecraft.hookinator.asm.hooks.FieldHookGeneral;
 import org.agecraft.hookinator.asm.hooks.MethodHookCall;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 
 import codechicken.core.asm.DependancyLister;
+import codechicken.lib.asm.ASMBlock;
+import codechicken.lib.asm.ASMReader;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
@@ -34,7 +37,7 @@ public class HookRegistry implements IHookRegistry {
 	private static Method defineClass;
 	private static Field cacheClasses;
 
-	protected Multimap<String, ClassHook> hooks = HashMultimap.create();
+	protected Multimap<String, IHook> hooks = HashMultimap.create();
 	private ArrayList<IHookLoader> loaders = Lists.newArrayList();
 
 	public HookRegistry() {
@@ -56,6 +59,56 @@ public class HookRegistry implements IHookRegistry {
 		}
 		return instance;
 	}
+	
+	@Override
+	public void addHook(IHook hook) {
+		hooks.put(hook.getClassName(), hook);
+	}
+	
+	@Override
+	public void removeHook(IHook hook) {
+		hooks.remove(hook.getClassName(), hook);
+	}
+	
+	@Override
+	public Map<String, ASMBlock> loadASMBlocks(String path) {
+		return ASMReader.loadResource(path);
+	}
+	
+	@Override
+	public void changeField(String className, String name, String desc, int newAccess, String newDesc, Object newValue) {
+		addHook(new FieldHookGeneral(className, name, desc, newAccess, newDesc, newValue));
+	}
+	
+	@Override
+	public void changeFieldAccess(String className, String name, String desc, int newAccess) {
+		addHook(new FieldHookGeneral(className, name, desc, newAccess));
+	}
+	
+	@Override
+	public void changeFieldDesc(String className, String name, String desc, String newDesc) {
+		addHook(new FieldHookGeneral(className, name, desc, newDesc));
+	}
+	
+	@Override
+	public void changeFieldValue(String className, String name, String desc, Object newValue) {
+		addHook(new FieldHookGeneral(className, name, desc, newValue));
+	}
+	
+	@Override
+	public void changeFieldAccessAndDesc(String className, String name, String desc, int newAccess, String newDesc) {
+		addHook(new FieldHookGeneral(className, name, desc, newAccess, newDesc));
+	}
+	
+	@Override
+	public void changeFieldAccessAndValue(String className, String name, String desc, int newAccess, Object newValue) {
+		addHook(new FieldHookGeneral(className, name, desc, newAccess,  newValue));
+	}
+	
+	@Override
+	public void changeFieldDescAndValue(String className, String name, String desc, String newDesc, Object newValue) {
+		addHook(new FieldHookGeneral(className, name, desc, newDesc, newValue));
+	}
 
 	@Override
 	public void replaceMethod(String className, String name, String desc, String callClassName, String callName) {
@@ -64,14 +117,12 @@ public class HookRegistry implements IHookRegistry {
 
 	@Override
 	public void insertBeforeMethod(String className, String name, String desc, String callClassName, String callName) {
-		MethodHookCall reference = new MethodHookCall(className, name, desc, callClassName, callName, false);
-		hooks.put(reference.className, reference);
+		addHook(new MethodHookCall(className, name, desc, callClassName, callName, false));
 	}
 
 	@Override
 	public void insertAfterMethod(String className, String name, String desc, String callClassName, String callName) {
-		MethodHookCall reference = new MethodHookCall(className, name, desc, callClassName, callName, true);
-		hooks.put(reference.className, reference);
+		addHook(new MethodHookCall(className, name, desc, callClassName, callName, true));
 	}
 
 	@Override

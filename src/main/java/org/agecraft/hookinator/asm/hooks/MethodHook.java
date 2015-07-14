@@ -27,14 +27,19 @@ public abstract class MethodHook extends ClassHook {
 		}
 		return name.equals(method.name) && desc.equals(method.desc);
 	}
+	
+	public MethodNode findMethod(ClassNode node) {
+		for(MethodNode method : node.methods) {
+			if(matches(method)) {
+				return method;
+			}
+		}
+		throw new RuntimeException("Method not found: " + toString());
+	}
 
 	@Override
 	public void apply(ClassNode node) {
-		for(MethodNode method : node.methods) {
-			if(matches(method)) {
-				apply(node, method);
-			}
-		}
+		apply(node, findMethod(node));
 	}
 
 	public abstract void apply(ClassNode node, MethodNode method);

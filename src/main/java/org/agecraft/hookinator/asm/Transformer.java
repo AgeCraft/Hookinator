@@ -4,7 +4,7 @@ import java.io.File;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
-import org.agecraft.hookinator.asm.hooks.ClassHook;
+import org.agecraft.hookinator.api.IHook;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -63,7 +63,7 @@ public class Transformer implements IClassTransformer {
 
 		boolean addedHook = false;
 		if(HookRegistry.instance().hooks.containsKey(name)) {
-			for(ClassHook hook : HookRegistry.instance().hooks.get(name)) {
+			for(IHook hook : HookRegistry.instance().hooks.get(name)) {
 				addedHook = true;
 				hook.apply(node);
 			}

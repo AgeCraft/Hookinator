@@ -28,13 +28,18 @@ public abstract class FieldHook extends ClassHook {
 		return name.equals(field.name) && desc.equals(field.desc);
 	}
 
-	@Override
-	public void apply(ClassNode node) {
-		for(FieldNode field : node.fields) {
-			if(matches(field)) {
-				apply(node, field);
+	public FieldNode findField(ClassNode node) {
+		for(FieldNode method : node.fields) {
+			if(matches(method)) {
+				return method;
 			}
 		}
+		throw new RuntimeException("Field not found: " + toString());
+	}
+
+	@Override
+	public void apply(ClassNode node) {
+		apply(node, findField(node));
 	}
 
 	public abstract void apply(ClassNode node, FieldNode field);
