@@ -3,7 +3,7 @@ package org.agecraft.hookinator.test;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 
-import org.agecraft.hookinator.HookResult;
+import org.agecraft.hookinator.api.HookResult;
 
 public class TestHooks {
 

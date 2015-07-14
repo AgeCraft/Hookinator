@@ -15,9 +15,10 @@ import java.util.zip.ZipEntry;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 
-import org.agecraft.hookinator.HookReference;
 import org.agecraft.hookinator.api.IHookLoader;
 import org.agecraft.hookinator.api.IHookRegistry;
+import org.agecraft.hookinator.asm.hooks.ClassHook;
+import org.agecraft.hookinator.asm.hooks.MethodHookCall;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 
@@ -33,7 +34,7 @@ public class HookRegistry implements IHookRegistry {
 	private static Method defineClass;
 	private static Field cacheClasses;
 
-	protected Multimap<String, HookReference> hooks = HashMultimap.create();
+	protected Multimap<String, ClassHook> hooks = HashMultimap.create();
 	private ArrayList<IHookLoader> loaders = Lists.newArrayList();
 
 	public HookRegistry() {
@@ -57,9 +58,25 @@ public class HookRegistry implements IHookRegistry {
 	}
 
 	@Override
-	public void addHook(String className, String name, String desc, String callClassName, String callName) {
-		HookReference reference = new HookReference(className, name, desc, callClassName, callName);
+	public void replaceMethod(String className, String name, String desc, String callClassName, String callName) {
+		// TODO
+	}
+
+	@Override
+	public void insertBeforeMethod(String className, String name, String desc, String callClassName, String callName) {
+		MethodHookCall reference = new MethodHookCall(className, name, desc, callClassName, callName, false);
 		hooks.put(reference.className, reference);
+	}
+
+	@Override
+	public void insertAfterMethod(String className, String name, String desc, String callClassName, String callName) {
+		MethodHookCall reference = new MethodHookCall(className, name, desc, callClassName, callName, true);
+		hooks.put(reference.className, reference);
+	}
+
+	@Override
+	public void insertBeforeEachReturn(String className, String name, String desc, String callClassName, String callName) {
+		// TODO
 	}
 
 	public void load() {

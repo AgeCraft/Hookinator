@@ -1,4 +1,4 @@
-package org.agecraft.hookinator;
+package org.agecraft.hookinator.api;
 
 public class HookResult<T> {
 

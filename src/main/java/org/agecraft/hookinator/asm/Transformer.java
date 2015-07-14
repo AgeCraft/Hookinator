@@ -1,11 +1,10 @@
 package org.agecraft.hookinator.asm;
 
 import java.io.File;
-import java.util.ArrayList;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
-import org.agecraft.hookinator.HookReference;
+import org.agecraft.hookinator.asm.hooks.ClassHook;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -14,18 +13,9 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 import codechicken.lib.asm.ASMHelper;
-
-import com.google.common.collect.Lists;
 
 public class Transformer implements IClassTransformer {
 
@@ -73,100 +63,12 @@ public class Transformer implements IClassTransformer {
 
 		boolean addedHook = false;
 		if(HookRegistry.instance().hooks.containsKey(name)) {
-			for(HookReference reference : HookRegistry.instance().hooks.get(name)) {
-				for(MethodNode method : node.methods) {
-					if(reference.matches(method)) {
-						addedHook = true;
-						method.instructions.insert(generateHook(reference, method));
-						CorePlugin.logger.debug(String.format("Inserted hook %s %s%s into %s %s", reference.callClassName, reference.callName, reference.desc, reference.className, reference.name));
-					}
-				}
+			for(ClassHook hook : HookRegistry.instance().hooks.get(name)) {
+				addedHook = true;
+				hook.apply(node);
 			}
 		}
 		return addedHook;
-	}
-
-	public InsnList generateHook(HookReference reference, MethodNode method) {
-		InsnList list = new InsnList();
-
-		String args = method.desc.substring(1).split("\\)")[0];
-		ArrayList<String> arguments = Lists.newArrayList();
-		int typeStart = -1;
-		for(int i = 0; i < args.length(); i++) {
-			char c = args.charAt(i);
-			if(typeStart == -1 && c != 'L') {
-				arguments.add(Character.toString(c));
-			} else if(typeStart == -1 && (c == '[' || c == 'L')) {
-				typeStart = i;
-			} else if(c == 'L' || c == ';') {
-				arguments.add(args.substring(typeStart + 1, i));
-			}
-		}
-		String returnType = method.desc.split("\\)")[1];
-		if(returnType.startsWith("L")) {
-			returnType = returnType.substring(1, returnType.length() - 1);
-		}
-
-		boolean isStatic = (method.access & Opcodes.ACC_STATIC) != 0;
-		int resultIndex = method.maxLocals;
-
-		if(!isStatic) {
-			list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-		}
-
-		for(int i = 0; i < arguments.size(); i++) {
-			String type = arguments.get(i);
-			int index = isStatic ? i : i + 1;
-			if(type.equals("I")) {
-				list.add(new VarInsnNode(Opcodes.ILOAD, index));
-			} else if(type.equals("D")) {
-				list.add(new VarInsnNode(Opcodes.DLOAD, index));
-			} else if(type.equals("F")) {
-				list.add(new VarInsnNode(Opcodes.FLOAD, index));
-			} else if(type.equals("J")) {
-				list.add(new VarInsnNode(Opcodes.LLOAD, index));
-			} else {
-				list.add(new VarInsnNode(Opcodes.ALOAD, index));
-			}
-		}
-
-		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, reference.callClassName, reference.callName, isStatic ? reference.callDescStatic : reference.callDesc, false));
-		list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
-
-		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookResult", "isCanceled", "()Z", false));
-		LabelNode label1 = new LabelNode();
-		list.add(new JumpInsnNode(Opcodes.IFEQ, label1));
-
-		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));
-		list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/agecraft/hookinator/HookResult", "getReturnValue", "()Ljava/lang/Object;", false));
-
-		if(returnType.equals("V")) {
-			list.add(new InsnNode(Opcodes.RETURN));
-		} else if(returnType.endsWith("Z") || returnType.endsWith("B") || returnType.endsWith("S") || returnType.endsWith("I")) {
-			list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Integer"));
-			list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
-			list.add(new InsnNode(Opcodes.IRETURN));
-		} else if(returnType.endsWith("D")) {
-			list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Double"));
-			list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
-			list.add(new InsnNode(Opcodes.DRETURN));
-		} else if(returnType.endsWith("F")) {
-			list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Float"));
-			list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
-			list.add(new InsnNode(Opcodes.FRETURN));
-		} else if(returnType.endsWith("J")) {
-			list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Long"));
-			list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false));
-			list.add(new InsnNode(Opcodes.LRETURN));
-		} else {
-			list.add(new TypeInsnNode(Opcodes.CHECKCAST, returnType));
-			list.add(new InsnNode(Opcodes.ARETURN));
-		}
-
-		list.add(label1);
-
-		return list;
 	}
 
 	@Override
