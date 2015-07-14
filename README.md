@@ -13,38 +13,24 @@ A simple Forge coremod that allows for easy hooking of Minecraft base methods
 3. Download Hookinator and put the file in the mods folder
 
 ## Usage
+### Setting up a hook loader
 Hookinator allows normal mods to hook Minecraft base methods. To do this you need to add a manifest to your mod jar with a `HookLoader` attribute that holds the full name of a loader class. For example:
 ```
 HookLoader: com.example.ExampleHookLoader
 ```
-This loader class has to implement `org.agecraft.hookinator.IHookLoader` and implement the `load()` method. Hookinator will call this method and allow you to register your hooks.
+This loader class has to implement `org.agecraft.hookinator.api.IHookLoader` and implement the `load(IHookRegistry registry)` method. Hookinator will call this method and allow you to register your hooks.
 
 ### Registering hooks
-To register a hook you have to call `HookLoader.registerHook()`, this method accepts either an `ObfMapping` from CodeChickenLib or three strings so Hookinator can create it for you. The first string is the full class name, the second string is the name of the method and the third is the method description. The method name has to be a srg name to work in an obfuscated environment.
+To register a hook you have to call one of the function of the `IHookRegistry`. Here is a list of different hooks you can register:
 ```java
-@Override
-public void load() {
-	// Block.isFullBlock()
-	HookLoader.registerHook("net/minecraft/block/Block", "func_149730_j", "()Z");
-}
-```
+void replaceMethod(String className, String name, String desc, String callClassName, String callName);
 
-### Registering listeners
-Hookinator uses an event bus to handle events, so you need to register a listener to receive your hook events. This CAN'T be done in `IHookLoader.load()` because of the way FML handles event buses, so you need to register it somewhere in your during your main mod. The faster you register you listener, the sooner you can receive events. In the future this will be possible during the load method, which is useful for the early hook.
+void insertBeforeMethod(String className, String name, String desc, String callClassName, String callName);
 
-### Hook events
-This is an example hook event.
-```java
-@SubscribeEvent
-public void onHookEvent(HookEvent event) {
-	if(event.className.equals("net.minecraft.block.Block") && event.name.equals("func_149730_j") && event.desc.equals("()Z")) {
-		event.setCanceled(true);
-		event.returnValue = false;
-	}
-}
+void insertAfterMethod(String className, String name, String desc, String callClassName, String callName);
+
+void insertBeforeEachReturn(String className, String name, String desc, String callClassName, String callName);
 ```
 
 ## Future plans
-* Make bus registering possible during hook loading
-* Allow in-line function calling instead of hook events for often called functions in for example rendering
-* Make hook detection easier than comparing three strings
+* Add more types of hooks
