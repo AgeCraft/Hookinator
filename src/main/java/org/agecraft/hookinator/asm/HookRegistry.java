@@ -18,12 +18,18 @@ import net.minecraft.launchwrapper.LaunchClassLoader;
 import org.agecraft.hookinator.api.IHook;
 import org.agecraft.hookinator.api.IHookLoader;
 import org.agecraft.hookinator.api.IHookRegistry;
-import org.agecraft.hookinator.asm.hooks.ChangeFieldHook;
-import org.agecraft.hookinator.asm.hooks.InsertHookMethodHook;
-import org.agecraft.hookinator.asm.hooks.ReplaceInstructionsMethodHook;
-import org.agecraft.hookinator.asm.hooks.ReplaceMethodHook;
+import org.agecraft.hookinator.asm.hooks.ChangeField;
+import org.agecraft.hookinator.asm.hooks.FieldWriter;
+import org.agecraft.hookinator.asm.hooks.InsertBeforeReturn;
+import org.agecraft.hookinator.asm.hooks.InsertHook;
+import org.agecraft.hookinator.asm.hooks.InsertHookBeforeReturn;
+import org.agecraft.hookinator.asm.hooks.InsertInstructions;
+import org.agecraft.hookinator.asm.hooks.MethodWriter;
+import org.agecraft.hookinator.asm.hooks.ReplaceInstructions;
+import org.agecraft.hookinator.asm.hooks.ReplaceMethod;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.InsnList;
 
 import codechicken.core.asm.DependancyLister;
 import codechicken.lib.asm.ASMBlock;
@@ -78,68 +84,118 @@ public class HookRegistry implements IHookRegistry {
 	}
 
 	@Override
+	public void createField(String className, String name, String desc, int access) {
+		addHook(new FieldWriter(className, name, desc, access));
+	}
+
+	@Override
+	public void createField(String className, String name, String desc, int access, Object value) {
+		addHook(new FieldWriter(className, name, desc, access, value));
+	}
+
+	@Override
 	public void changeField(String className, String name, String desc, int newAccess, String newDesc, Object newValue) {
-		addHook(new ChangeFieldHook(className, name, desc, newAccess, newDesc, newValue));
+		addHook(new ChangeField(className, name, desc, newAccess, newDesc, newValue));
 	}
 
 	@Override
 	public void changeFieldAccess(String className, String name, String desc, int newAccess) {
-		addHook(new ChangeFieldHook(className, name, desc, newAccess));
+		addHook(new ChangeField(className, name, desc, newAccess));
 	}
 
 	@Override
 	public void changeFieldDesc(String className, String name, String desc, String newDesc) {
-		addHook(new ChangeFieldHook(className, name, desc, newDesc));
+		addHook(new ChangeField(className, name, desc, newDesc));
 	}
 
 	@Override
 	public void changeFieldValue(String className, String name, String desc, Object newValue) {
-		addHook(new ChangeFieldHook(className, name, desc, newValue));
+		addHook(new ChangeField(className, name, desc, newValue));
 	}
 
 	@Override
 	public void changeFieldAccessAndDesc(String className, String name, String desc, int newAccess, String newDesc) {
-		addHook(new ChangeFieldHook(className, name, desc, newAccess, newDesc));
+		addHook(new ChangeField(className, name, desc, newAccess, newDesc));
 	}
 
 	@Override
 	public void changeFieldAccessAndValue(String className, String name, String desc, int newAccess, Object newValue) {
-		addHook(new ChangeFieldHook(className, name, desc, newAccess, newValue));
+		addHook(new ChangeField(className, name, desc, newAccess, newValue));
 	}
 
 	@Override
 	public void changeFieldDescAndValue(String className, String name, String desc, String newDesc, Object newValue) {
-		addHook(new ChangeFieldHook(className, name, desc, newDesc, newValue));
+		addHook(new ChangeField(className, name, desc, newDesc, newValue));
+	}
+
+	@Override
+	public void createMethod(String className, String name, String desc, int access, String[] exceptions) {
+		addHook(new MethodWriter(className, name, desc, access, exceptions));
+	}
+
+	@Override
+	public void createMethod(String className, String name, String desc, int access, String[] exceptions, InsnList instructions) {
+		addHook(new MethodWriter(className, name, desc, access, exceptions, instructions));
+	}
+
+	@Override
+	public void createMethod(String className, String name, String desc, int access, String[] exceptions, ASMBlock instructions) {
+		addHook(new MethodWriter(className, name, desc, access, exceptions, instructions));
 	}
 
 	@Override
 	public void replaceMethod(String className, String name, String desc, String callClassName, String callName) {
-		addHook(new ReplaceMethodHook(className, name, desc, callClassName, callName));
+		addHook(new ReplaceMethod(className, name, desc, callClassName, callName));
 	}
 
 	@Override
 	public void replaceMethod(String className, String name, String desc, ASMBlock replacement) {
-		addHook(new ReplaceInstructionsMethodHook(className, name, desc, replacement));
+		addHook(new ReplaceInstructions(className, name, desc, replacement));
 	}
 
 	@Override
 	public void findAndReplaceMethodInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock replacement) {
-		addHook(new ReplaceInstructionsMethodHook(className, name, desc, needle, replacement));
+		addHook(new ReplaceInstructions(className, name, desc, needle, replacement));
 	}
 
 	@Override
 	public void insertBeforeMethod(String className, String name, String desc, String callClassName, String callName) {
-		addHook(new InsertHookMethodHook(className, name, desc, callClassName, callName, false));
+		addHook(new InsertHook(className, name, desc, callClassName, callName, false));
+	}
+
+	@Override
+	public void insertBeforeMethod(String className, String name, String desc, ASMBlock insertion) {
+		addHook(new InsertInstructions(className, name, desc, insertion, false));
 	}
 
 	@Override
 	public void insertAfterMethod(String className, String name, String desc, String callClassName, String callName) {
-		addHook(new InsertHookMethodHook(className, name, desc, callClassName, callName, true));
+		addHook(new InsertHook(className, name, desc, callClassName, callName, true));
+	}
+
+	@Override
+	public void insertAfterMethod(String className, String name, String desc, ASMBlock insertion) {
+		addHook(new InsertInstructions(className, name, desc, insertion, true));
 	}
 
 	@Override
 	public void insertBeforeEachReturn(String className, String name, String desc, String callClassName, String callName) {
-		// TODO
+		addHook(new InsertHookBeforeReturn(className, name, desc, callClassName, callName));
+	}
+
+	@Override
+	public void insertBeforeEachReturn(String className, String name, String desc, ASMBlock insertion) {
+		addHook(new InsertBeforeReturn(className, name, desc, insertion));
+	}
+
+	@Override
+	public void insertAfterInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock insertion) {
+		addHook(new InsertInstructions(className, name, desc, needle, insertion, false));
+	}
+
+	@Override
+	public void insertBeforeInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock insertion) {
+		addHook(new InsertInstructions(className, name, desc, needle, insertion, true));
 	}
 
 	public void load() {

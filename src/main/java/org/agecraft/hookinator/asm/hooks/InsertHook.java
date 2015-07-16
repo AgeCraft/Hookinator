@@ -16,22 +16,12 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 import com.google.common.collect.Lists;
 
-public class InsertHookMethodHook extends MethodHook {
-
-	public String callClassName;
-	public String callName;
-	public String callDesc;
-	public String callDescStatic;
+public class InsertHook extends HookMethod {
 
 	public boolean after;
 
-	public InsertHookMethodHook(String className, String name, String desc, String callClassName, String callName, boolean after) {
-		super(className, name, desc);
-
-		this.callClassName = callClassName.replace('.', '/');
-		this.callName = callName;
-		this.callDesc = "(L" + className.replace('.', '/') + ";" + desc.substring(1, desc.indexOf(")")) + ")Lorg/agecraft/hookinator/api/HookResult;";
-		this.callDescStatic = desc.substring(0, desc.indexOf(")")) + ")Lorg/agecraft/hookinator/api/HookResult;";
+	public InsertHook(String className, String name, String desc, String callClassName, String callName, boolean after) {
+		super(className, name, desc, callClassName, callName);
 
 		this.after = after;
 	}
@@ -41,18 +31,13 @@ public class InsertHookMethodHook extends MethodHook {
 		CorePlugin.logger.debug(String.format("Inserted hook %s %s%s %s %s %s", callClassName, callName, callDesc, after ? " after " : " before ", className, name));
 
 		if(!after) {
-			method.instructions.insert(generate(this, method));
+			method.instructions.insert(generate(method));
 		} else {
-			method.instructions.insertBefore(method.instructions.getLast(), generate(this, method));
+			method.instructions.insertBefore(method.instructions.getLast(), generate(method));
 		}
 	}
 
-	@Override
-	public String toString() {
-		return String.format("InsertHookMethodHook[%s %s%s --> %s %s%s]", className, name, desc, callClassName.replace('/', '.'), callName, callDesc);
-	}
-
-	public static InsnList generate(InsertHookMethodHook hook, MethodNode method) {
+	public InsnList generate(MethodNode method) {
 		InsnList list = new InsnList();
 
 		String args = method.desc.substring(1).split("\\)")[0];
@@ -96,7 +81,7 @@ public class InsertHookMethodHook extends MethodHook {
 			}
 		}
 
-		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, hook.callClassName, hook.callName, isStatic ? hook.callDescStatic : hook.callDesc, false));
+		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, callClassName, callName, isStatic ? callDescStatic : callDesc, false));
 		list.add(new VarInsnNode(Opcodes.ASTORE, resultIndex));
 
 		list.add(new VarInsnNode(Opcodes.ALOAD, resultIndex));

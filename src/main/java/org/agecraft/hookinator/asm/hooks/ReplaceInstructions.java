@@ -8,19 +8,19 @@ import codechicken.lib.asm.ASMBlock;
 import codechicken.lib.asm.InsnComparator;
 import codechicken.lib.asm.InsnListSection;
 
-public class ReplaceInstructionsMethodHook extends MethodHook {
+public class ReplaceInstructions extends MethodHook {
 
 	public ASMBlock needle;
 	public ASMBlock replacement;
 
-	public ReplaceInstructionsMethodHook(String className, String name, String desc, ASMBlock needle, ASMBlock replacement) {
+	public ReplaceInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock replacement) {
 		super(className, name, desc);
 
 		this.needle = needle;
 		this.replacement = replacement;
 	}
 
-	public ReplaceInstructionsMethodHook(String className, String name, String desc, ASMBlock replacement) {
+	public ReplaceInstructions(String className, String name, String desc, ASMBlock replacement) {
 		this(className, name, desc, null, replacement);
 	}
 

@@ -23,13 +23,63 @@ This loader class has to implement `org.agecraft.hookinator.api.IHookLoader` and
 ### Registering hooks
 To register a hook you have to call one of the function of the `IHookRegistry`. Here is a list of different hooks you can register:
 ```java
+void createField(String className, String name, String desc, int access);
+
+void createField(String className, String name, String desc, int access, Object value);
+
+void changeField(String className, String name, String desc, int newAccess, String newDesc, Object newValue);
+
+void changeFieldAccess(String className, String name, String desc, int newAccess);
+
+void changeFieldDesc(String className, String name, String desc, String newDesc);
+
+void changeFieldValue(String className, String name, String desc, Object newValue);
+
+void changeFieldAccessAndDesc(String className, String name, String desc, int newAccess, String newDesc);
+
+void changeFieldAccessAndValue(String className, String name, String desc, int newAccess, Object newValue);
+
+void changeFieldDescAndValue(String className, String name, String desc, String newDesc, Object newValue);
+
+void createMethod(String className, String name, String desc, int access, String[] exceptions);
+
+void createMethod(String className, String name, String desc, int access, String[] exceptions, InsnList instructions);
+
+void createMethod(String className, String name, String desc, int access, String[] exceptions, ASMBlock instructions);
+
 void replaceMethod(String className, String name, String desc, String callClassName, String callName);
+
+void replaceMethod(String className, String name, String desc, ASMBlock replacement);
+
+void findAndReplaceMethodInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock replacement);
 
 void insertBeforeMethod(String className, String name, String desc, String callClassName, String callName);
 
+void insertBeforeMethod(String className, String name, String desc, ASMBlock insertion);
+
 void insertAfterMethod(String className, String name, String desc, String callClassName, String callName);
 
+void insertAfterMethod(String className, String name, String desc, ASMBlock insertion);
+
 void insertBeforeEachReturn(String className, String name, String desc, String callClassName, String callName);
+
+void insertBeforeEachReturn(String className, String name, String desc, ASMBlock insertion);
+
+void insertBeforeInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock insertion);
+
+void insertAfterInstructions(String className, String name, String desc, ASMBlock needle, ASMBlock insertion);
+```
+
+### Utility methods
+The `IHookRegistry` also has some utility methods. You can add or remove custom hooks using:
+```java
+void addHook(IHook hook);
+void removeHook(IHook hook);
+```
+
+And you can quickly load ASM blocks, it just passes the arguments to CodeChickenCore to handle the loading:
+```java
+Map<String, ASMBlock> loadASMBlocks(String path);
 ```
 
 ## Future plans

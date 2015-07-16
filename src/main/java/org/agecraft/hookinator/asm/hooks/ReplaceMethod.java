@@ -14,20 +14,10 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 import com.google.common.collect.Lists;
 
-public class ReplaceMethodHook extends MethodHook {
+public class ReplaceMethod extends HookMethod {
 
-	public String callClassName;
-	public String callName;
-	public String callDesc;
-	public String callDescStatic;
-
-	public ReplaceMethodHook(String className, String name, String desc, String callClassName, String callName) {
-		super(className, name, desc);
-
-		this.callClassName = callClassName.replace('.', '/');
-		this.callName = callName;
-		this.callDesc = "(L" + className.replace('.', '/') + ";" + desc.substring(1);
-		this.callDescStatic = this.desc;
+	public ReplaceMethod(String className, String name, String desc, String callClassName, String callName) {
+		super(className, name, desc, callClassName, callName);
 	}
 
 	@Override
@@ -35,15 +25,10 @@ public class ReplaceMethodHook extends MethodHook {
 		CorePlugin.logger.debug(String.format("Replacing method %s %s%s with call to %s %s%s", className, name, desc, callClassName, callName, desc));
 
 		method.instructions.clear();
-		method.instructions.add(generate(this, method));
+		method.instructions.add(generate(method));
 	}
 
-	@Override
-	public String toString() {
-		return String.format("ReplaceMethodHook[%s %s%s --> %s %s%s]", className, name, desc, callClassName.replace('/', '.'), callName, callDesc);
-	}
-
-	public static InsnList generate(ReplaceMethodHook hook, MethodNode method) {
+	public InsnList generate(MethodNode method) {
 		InsnList list = new InsnList();
 
 		String args = method.desc.substring(1).split("\\)")[0];
@@ -85,7 +70,7 @@ public class ReplaceMethodHook extends MethodHook {
 			}
 		}
 
-		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, hook.callClassName, hook.callName, isStatic ? hook.callDescStatic : hook.callDesc, false));
+		list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, callClassName, callName, isStatic ? callDescStatic : callDesc, false));
 
 		if(returnType.equals("V")) {
 			list.add(new InsnNode(Opcodes.RETURN));

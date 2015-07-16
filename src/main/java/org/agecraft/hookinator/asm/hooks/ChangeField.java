@@ -4,13 +4,13 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 
-public class ChangeFieldHook extends FieldHook {
+public class ChangeField extends FieldHook {
 
 	public int newAccess;
 	public String newDesc;
 	public Object newValue;
 
-	public ChangeFieldHook(String className, String name, String desc, int newAccess, String newDesc, Object newValue) {
+	public ChangeField(String className, String name, String desc, int newAccess, String newDesc, Object newValue) {
 		super(className, name, desc);
 
 		this.newAccess = newAccess;
@@ -22,27 +22,27 @@ public class ChangeFieldHook extends FieldHook {
 		}
 	}
 
-	public ChangeFieldHook(String className, String name, String desc, int newAccess) {
+	public ChangeField(String className, String name, String desc, int newAccess) {
 		this(className, name, desc, newAccess, null, null);
 	}
 
-	public ChangeFieldHook(String className, String name, String desc, String newDesc) {
+	public ChangeField(String className, String name, String desc, String newDesc) {
 		this(className, name, desc, -1, newDesc, null);
 	}
 
-	public ChangeFieldHook(String className, String name, String desc, Object newValue) {
+	public ChangeField(String className, String name, String desc, Object newValue) {
 		this(className, name, desc, -1, null, newValue);
 	}
 
-	public ChangeFieldHook(String className, String name, String desc, int newAccess, String newDesc) {
+	public ChangeField(String className, String name, String desc, int newAccess, String newDesc) {
 		this(className, name, desc, newAccess, newDesc, null);
 	}
 
-	public ChangeFieldHook(String className, String name, String desc, int newAccess, Object newValue) {
+	public ChangeField(String className, String name, String desc, int newAccess, Object newValue) {
 		this(className, name, desc, newAccess, null, newValue);
 	}
 
-	public ChangeFieldHook(String className, String name, String desc, String newDesc, Object newValue) {
+	public ChangeField(String className, String name, String desc, String newDesc, Object newValue) {
 		this(className, name, desc, -1, newDesc, newValue);
 	}
 
